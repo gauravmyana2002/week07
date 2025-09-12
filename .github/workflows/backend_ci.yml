@@ -124,23 +124,27 @@ jobs:
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }} # Needs to be set as a GitHub Secret (Service Principal JSON)
 
-    # Login to Azure Container Registry (ACR)
     - name: Login to Azure Container Registry
       run: |
-       REG_NAME=$(echo "${{ secrets.ACR_LOGIN_SERVER }}" | cut -d'.' -f1)
+        REG_LOGIN="${{ env.ACR_LOGIN_SERVER }}"
+        REG_LOGIN="${REG_LOGIN//$'\r'/}"; REG_LOGIN="${REG_LOGIN//$'\n'/}"
+        REG_NAME="${REG_LOGIN%%.*}"
+        echo "Registry: $REG_NAME"
         az acr login --name "$REG_NAME"
 
- # Build and Push Docker image for Product Service
     - name: Build and Push Product Service Image
       run: |
-        TAG="${{ secrets.ACR_LOGIN_SERVER }}/product_service:latest"
+        REG_LOGIN="${{ env.ACR_LOGIN_SERVER }}"
+        REG_LOGIN="${REG_LOGIN//$'\r'/}"; REG_LOGIN="${REG_LOGIN//$'\n'/}"
+        TAG="${REG_LOGIN}/product_service:latest"
         docker build backend/product_service -t "$TAG"
         docker push "$TAG"
 
-    # Build and Push Docker image for Order Service
     - name: Build and Push Order Service Image
       run: |
-        TAG="${{ secrets.ACR_LOGIN_SERVER }}/order_service:latest"
+        REG_LOGIN="${{ env.ACR_LOGIN_SERVER }}"
+        REG_LOGIN="${REG_LOGIN//$'\r'/}"; REG_LOGIN="${REG_LOGIN//$'\n'/}"
+        TAG="${REG_LOGIN}/order_service:latest"
         docker build backend/order_service -t "$TAG"
         docker push "$TAG"
 
