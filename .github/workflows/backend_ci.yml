@@ -124,37 +124,21 @@ jobs:
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }} # Needs to be set as a GitHub Secret (Service Principal JSON)
 
-    - name: Docker login to ACR
-      env:
-        REG_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}   # e.g. sit722wk07acr.azurecr.io
-      run: |
-        set -e
-        REG_SERVER="${REG_SERVER//$'\r'/}"; REG_SERVER="${REG_SERVER//$'\n'/}"
-        REG_NAME="${REG_SERVER%%.*}"  # sit722wk07acr
-        TOKEN=$(az acr login --name "$REG_NAME" --expose-token --output tsv --query accessToken)
-        echo "$TOKEN" | docker login "$REG_SERVER" -u 00000000-0000-0000-0000-000000000000 --password-stdin
+    # Login to Azure Container Registry (ACR)
+    - name: Login to Azure Container Registry
+      run: az acr login --name ${{ env.ACR_LOGIN_SERVER }}
 
-    # Build and push Product Service
+    # Build and Push Docker image for Product Service
     - name: Build and Push Product Service Image
-      env:
-        REG_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
       run: |
-        set -e
-        REG_SERVER="${REG_SERVER//$'\r'/}"; REG_SERVER="${REG_SERVER//$'\n'/}"
-        TAG="$REG_SERVER/product_service:latest"
-        docker build backend/product_service -t "$TAG"
-        docker push "$TAG"
+        docker build -t ${{ env.ACR_LOGIN_SERVER }}/product_service:latest ./backend/product_service/
+        docker push ${{ env.ACR_LOGIN_SERVER }}/product_service:latest
 
-    # Build and push Order Service
+    # Build and Push Docker image for Order Service
     - name: Build and Push Order Service Image
-      env:
-        REG_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
       run: |
-        set -e
-        REG_SERVER="${REG_SERVER//$'\r'/}"; REG_SERVER="${REG_SERVER//$'\n'/}"
-        TAG="$REG_SERVER/order_service:latest"
-        docker build backend/order_service -t "$TAG"
-        docker push "$TAG"
+        docker build -t ${{ env.ACR_LOGIN_SERVER }}/order_service:latest ./backend/order_service/
+        docker push ${{ env.ACR_LOGIN_SERVER }}/order_service:latest
 
     # Logout from Azure for security (runs even if image push fails)
     - name: Logout from Azure
